@@ -1,6 +1,7 @@
 package com.example.snow_.dovizuygulama;
 
 import android.app.DownloadManager;
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -30,7 +31,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
     String baseUrl = "https://www.doviz.com/api/v1/currencies/all/latest";// döviz değerlerini çektiğimiz api
     String url;
-    RequestQueue requestQueue;
+    RequestQueue requestQueue,requestQueue1;
     Spinner spinner;
     TextView txt;
     private ArrayAdapter <String> ilkKur;
@@ -44,30 +45,32 @@ public class MainActivity extends AppCompatActivity {
         spinner=(Spinner) findViewById(R.id.spinner);
         txt=(TextView) findViewById(R.id.textView);
         requestQueue = Volley.newRequestQueue(this);
-        degerGetir();
-        aktifle();
+        requestQueue1=Volley.newRequestQueue(this);
+        Task task=new Task();
+        task.execute();
+
     }
     public void aktifle(){
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                long degerId=spinner.getSelectedItemId(); //hangi veriyi seçtiysek onun değerini getiriyoruz.
-                txt.setText(list1.get((int) degerId));//burada da textview e yazdırma işlemini yapıyoruz.
+                degerGetir();
+                //long degerId=spinner.getSelectedItemId(); //hangi veriyi seçtiysek onun değerini getiriyoruz.
+                //txt.setText(list1.get((int) degerId));//burada da textview e yazdırma işlemini yapıyoruz.
+                txt.setText(list1.get((int) id));
             }
-
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
-                spinner.setEnabled(false);
+
             }
         });
     }
-
     public void son(){
         ilkKur = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item,list); //degerGetir fonksiyonunda listeye attıgımız verileri spinner a ekliyoruz.
         ilkKur.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(ilkKur);
     }
-    public void degerGetir(){
+    public void isimGetir(){
         JsonArrayRequest arrReq = new JsonArrayRequest(Request.Method.GET, baseUrl,
                 new Response.Listener<JSONArray>() {
                     @Override
@@ -79,11 +82,9 @@ public class MainActivity extends AppCompatActivity {
                                 try {
                                     JSONObject jsonObj = response.getJSONObject(i);
                                     sembol = jsonObj.get("full_name").toString();//json formatında hangi veriyi çekecekseniz onu yazıyorsunuz.
-                                    deger = jsonObj.get("selling").toString();
                                     list.add(i,sembol);//burada listeye ekledik.
-                                    list1.add(i,deger);
                                     son(); //bu fonksiyona gitmesini belirttik.
-
+                                    aktifle();
                                 } catch (JSONException e) {
 
                                     Log.e("Volley", "JSON Nesnesi Bulunamadı.");
@@ -102,5 +103,57 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
         requestQueue.add(arrReq);
+    }
+    public void degerGetir(){
+        JsonArrayRequest arrReq1 = new JsonArrayRequest(Request.Method.GET, baseUrl,
+                new Response.Listener<JSONArray>() {
+                    @Override
+                    public void onResponse(JSONArray response1) {
+                        //verinin olup olmadığını sorguluyoruz.
+                        if (response1.length() > 0) {
+                            // kaç veri varsa o kadar dönecek for döngüsünü oluşturuyoruz.
+                            for (int i = 0; i < response1.length(); i++) {
+                                try {
+                                    JSONObject jsonObj1 = response1.getJSONObject(i);
+                                    deger = jsonObj1.get("selling").toString();
+                                    list1.add(i,deger);
+                                } catch (JSONException e) {
+                                    Log.e("Volley", "JSON Nesnesi Bulunamadı.");
+                                }
+                            }
+                        } else {
+                            Log.e("Volley", "Veri Yok.");
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.e("Volley", error.toString());
+                    }
+                }
+        );
+        requestQueue1.add(arrReq1);
+
+    }
+    public class Task extends AsyncTask<String,Void,String>{
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            isimGetir();
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            degerGetir();
+            return null;
+        }
+
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            aktifle();
+        }
     }
 }
