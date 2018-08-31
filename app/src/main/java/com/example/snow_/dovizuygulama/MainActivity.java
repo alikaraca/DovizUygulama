@@ -134,7 +134,6 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
         requestQueue1.add(arrReq1);
-
     }
     public class Task extends AsyncTask<String,Void,String>{
         @Override
